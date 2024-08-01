@@ -5,10 +5,5 @@ __version__ = "4.0.0"
 __maintainer__ = "Tony Smith"
 
 from .ht16k33 import *
-from .ht16k33matrix import *
-from .ht16k33matrixcolour import *
 from .ht16k33matrixfeatherwing import *
-from .ht16k33segment import *
-from .ht16k33segment14 import *
-from .ht16k33segmentbig import *
-from .ht16k33segmentgen import *
+
