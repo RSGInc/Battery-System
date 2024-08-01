@@ -1,7 +1,8 @@
 # Battery-System
+#### A brand new board will need firmware and software loaded onto it
 
 
-## To load the Python interpreter into the device
+## To load the firmware into the device
 1. To start, open the Firmware folder and download the .uf2 file.
 2. Plug in the battery board while pressing the white button
 3. You should see a drive appear in your file explorer
