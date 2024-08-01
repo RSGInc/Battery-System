@@ -8,6 +8,13 @@ from sleep import sleep_with_wakeup
 # Define the onboard LED pin 
 status_led = machine.Pin(3, machine.Pin.OUT)
 
+# get rid of this later
+while True:
+    status_led.value(1)  
+    utime.sleep_ms(100)
+    status_led.value(0)
+    utime.sleep_ms(100)
+
 # Define GPIO pin used for the switch input
 SWITCH_PIN = 2
 
