@@ -14,7 +14,7 @@
 5. Open a command line and paste `py -m mpremote mip install github:RSGInc/Battery-System/Software`
    The code will not run until the device is unplugged
 
-## To clear the devices flash drive
+## To clear the devices memory completely
 #### Only do this if the device is hung and will not respond to thonny or any inputs
 1. Open the Clear-Flash folder and download the .uf2 file.
 2. Plug in the battery board while pressing the white button
