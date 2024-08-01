@@ -4,7 +4,7 @@
 ####  While using the installer, make sure you check the box “Add Python to PATH.” Next, click “Customize installation” and check the “pip” box under Optional Features. Then, click “Next” to get to Advanced Options and check the “Add Python to environment variables” box.
 https://www.python.org/downloads/
 ## To use mpremote, install it first using pip
-`pip install --user mpremote`
+`py -m pip install --user mpremote`
 
 ## To load the firmware into the device
 1. To start, open the Firmware folder and download the .uf2 file.
