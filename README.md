@@ -1,6 +1,6 @@
 # Battery-System
 #### A brand new board will need firmware and software loaded onto it
-## We will need python installed to operate this
+## Python and the pip installer are needed
 ####  While using the installer, make sure you check the box “Add Python to PATH.” Next, click “Customize installation” and check the “pip” box under Optional Features. Then, click “Next” to get to Advanced Options and check the “Add Python to environment variables” box.
 https://www.python.org/downloads/
 ## To use mpremote, install it first using pip
