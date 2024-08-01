@@ -1,6 +1,8 @@
 # Battery-System
 #### A brand new board will need firmware and software loaded onto it
 
+## To use mpremote, install it first using pip
+`pip install --user mpremote`
 
 ## To load the firmware into the device
 1. To start, open the Firmware folder and download the .uf2 file.
