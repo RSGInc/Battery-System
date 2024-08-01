@@ -12,6 +12,7 @@
 
 ## To load the software onto the device 
 5. Open a command line and paste `py -m mpremote mip install github:RSGInc/Battery-System/Software`
+6. The code will not run until the device is unplugged
 
 ## To clear the devices flash drive
 #### Only do this if the device is hung and will not respond to thonny or any inputs
