@@ -5,9 +5,16 @@ import utime
 # it then checks to see if it is connected to 12v
 # it then calculates what the total power consumption is
 # theres two ways it does this
+# if it is supplying 12v then it averages the current supplied by each set of batteries
+# ie the sum of 4v averaged with the sum of 8v averaged with the sum of 12v
+# this is because of the way batteries in series work, they will all have the same current inherently
+# we just average for a more precise reading
+# when it is just four volt we sum the currents
 #
+# The audio batteries are always summed
 # 
-def read_channels_log(batteries, num_batteries, logging):
+# 
+def read_channels_log(batteries, num_batteries, logging, rtc, timestart):
     # total current and audio current are the currents used to calculate the total wattage for 4v, 12v and audio
     total_current = 0
     audio_current = 0
@@ -22,14 +29,14 @@ def read_channels_log(batteries, num_batteries, logging):
             read_channel(batteries, channel)
         # see if it is power 12v
         if batteries[channel].level == 12:
-            twelveVolt = True
+            twelve_volt = True
             
 
-    if twelveVolt:
-        
+    if twelve_volt:
         four_v = 0
         eight_v = 0
         twelve_v = 0
+        # sums the individual voltages
         for channel in range(num_batteries):
             # 4v sum
             if channel >= 3 and channel <= 8:
@@ -43,30 +50,26 @@ def read_channels_log(batteries, num_batteries, logging):
             # audio sum
             if channel >= 21:
                 audio_current += batteries[channel].current
-        # averages the currents, stores the data to local file and returns from the function
-        # This would be for the cirrus
-        if audio_current:
-            total_current = (four_v + eight_v + twelve_v) / 2
-            for channel in range(num_batteries):
-                if channel > 20 and batteries[channel].level:
-                    audio_current += batteries[channel].current
-        else:
-            total_current = (four_v + eight_v + twelve_v) / 3
-        return store_to_local_file(batteries, total_current, audio_current, num_batteries, logging)
+        # averages them and runs the store to data function
+        total_current = (four_v + eight_v + twelve_v) / 3
+        return store_to_local_file(batteries, total_current, audio_current, num_batteries, logging, rtc, timestart)
     
-    # this is for when only using 12v it just sums the total current
-    else:      
+    else:
+        # when just 12v
         for channel in range(num_batteries):
-            if channel < 21:
+            # Sum of 4v
+            if channel >= 3 and channel <= 8:
                 total_current += batteries[channel].current
+            # sum of audio
             if channel > 20:
                 audio_current += batteries[channel].current
-        return store_to_local_file(batteries, total_current, audio_current, num_batteries, logging)
+        return store_to_local_file(batteries, total_current, audio_current, num_batteries, logging, rtc, timestart)
 
 
 
 # Function to populate batteries during setup
 def read_channels_setup(batteries, display, num_batteries):
+    # this is what can tell what voltage the battery is at
     for channel in range(num_batteries):
         read_channel(batteries, channel)
         if batteries[channel].voltage > 9:
@@ -157,7 +160,7 @@ def update_leds(batteries, display, num_batteries):
         
         
 
-def store_to_local_file(batteries, total_current, audio_current, num_batteries, logging):
+def store_to_local_file(batteries, total_current, audio_current, num_batteries, logging, rtc, timestart):
     # this sees what voltage the slm is being powered at (4v, 8v, 12v)
     current_level = 0
     for i in range(3, 20):
@@ -166,38 +169,58 @@ def store_to_local_file(batteries, total_current, audio_current, num_batteries, 
             
     # Clear the contents of the file only if logging has not started yet
     if not logging:
+        timestart=rtc.datetime()
         with open("battery_data.csv", "w") as file:
-            file.write("Power Consumption (W)")
-            if audio_current > 1:
-                file.write(", Audio Power (W)")
+            file.write("Time")
+            file.write(", SLM Power Consumption (W)")
             file.write(", 4v Supply (V)")
             if batteries[2].level:
                 file.write(", 12v Supply (V)")
             for i in range(3, num_batteries):
-                if batteries[i].level:
+                if batteries[i].level and i < 21:
                     file.write(f", Battery {i - 2} Voltage (V)")
                     file.write(f", Battery {i - 2} Current (A)")
+                elif batteries[i].level and i >= 21:
+                    file.write(f", Audio Battery {i - 20} Voltage (V)")
             
             file.write("\n")
         logging = True
         
     with open("battery_data.csv", "a") as file:
+        # finds time
+        timestamp=rtc.datetime()
+        
+        # all this is annoying but must be done
+        # Manual calculation of the difference (considering only the first six components)
+        day_diff = timestamp[2] - timestart[2]
+        hour_diff = (timestamp[4] - timestart[4]) + (day_diff * 24)
+        minute_diff = timestamp[5] - timestart[5]
+        second_diff = timestamp[6] - timestart[6]
+
+        # Handling negative differences by adjusting the higher component
+        if second_diff < 0:
+            second_diff += 60
+            minute_diff -= 1
+        if minute_diff < 0:
+            minute_diff += 60
+            hour_diff -= 1
+        # processes it and puts it on the csv
+        file.write("%02d:%02d:%02d" % (hour_diff, minute_diff, second_diff) + ", ")
         if current_level == 12:
             power = batteries[2].voltage * total_current
-            file.write(f"{power:.4f}")
+            file.write(f"{power:.4f}, ")
         else:
             power = batteries[0].voltage * total_current
-            file.write(f"{power:.4f}")
-        if audio_current > .1:
-            power = batteries[0].voltage * audio_current
-            file.write(f"{power:.4f}")
-        file.write(f", {batteries[0].voltage:.4f}")
+            file.write(f"{power:.4f}, ")
+        file.write(f"{batteries[0].voltage:.4f}")
         for i in range(2, num_batteries):
             if batteries[i].level and (i == 2):
                 file.write(f", {batteries[i].voltage:.4f}")
-            elif batteries[i].level:
+            elif batteries[i].level and i < 21:
                 file.write(f", {batteries[i].voltage:.4f}")
                 file.write(f", {batteries[i].current:.4f}")
+            elif batteries[i].level and i >= 21:
+                file.write(f", {batteries[i].voltage:.4f}")
         file.write("\n")
     return logging
     
@@ -205,16 +228,17 @@ def store_to_local_file(batteries, total_current, audio_current, num_batteries, 
     
     
 def read_channel(batteries, channel):
+    # reads the voltage of the channel
     voltage = read_average_voltage_from_mux_channel(channel)
     # Update battery voltage
     batteries[channel].voltage = (voltage * batteries[channel].gain) - batteries[channel].offset
     # update battery current
     if batteries[channel].level == 12:
-        batteries[channel].current = (batteries[channel].voltage - batteries[2].voltage) / 10.3
+        batteries[channel].current = (batteries[channel].voltage - batteries[2].voltage) / 3.3 # the 10.3 is the resistance of the resistor in the battery will need to be changed to 1
     elif batteries[channel].level == 8:
-        batteries[channel].current = (batteries[channel].voltage - batteries[1].voltage) / 10.3
+        batteries[channel].current = (batteries[channel].voltage - batteries[1].voltage) / 3.3
     elif batteries[channel].level == 4:
-        batteries[channel].current = (batteries[channel].voltage - batteries[0].voltage) / 10.3
+        batteries[channel].current = (batteries[channel].voltage - batteries[0].voltage) / 3.3
 
 
 

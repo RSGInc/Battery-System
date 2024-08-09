@@ -8,13 +8,6 @@ from sleep import sleep_with_wakeup
 # Define the onboard LED pin 
 status_led = machine.Pin(3, machine.Pin.OUT)
 
-# get rid of this later
-while True:
-    status_led.value(1)  
-    utime.sleep_ms(100)
-    status_led.value(0)
-    utime.sleep_ms(100)
-
 # Define GPIO pin used for the switch input
 SWITCH_PIN = 2
 
@@ -38,10 +31,8 @@ class Battery:
 # Initialize switch input pin
 switch_pin = machine.Pin(SWITCH_PIN, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
-# for pico W
-# vbus_pin = machine.Pin('WL_GPIO2', machine.Pin.IN)
-# For normal pico and other board
-# vbus_pin = machine.Pin(24, machine.Pin.IN, machine.Pin.PULL_DOWN)
+
+vbus_pin = machine.Pin(24, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 
 
@@ -67,7 +58,9 @@ def main():
     
     logging = 0
     
-    switch_start_state = switch_pin.value()
+    # time stamp logging
+    rtc=machine.RTC()
+    timestart=rtc.datetime()
     
     
     # all made from use with the calibration folder Q:\Administrative\Acoustics Admin & Resources\Resources\Equipment & Supporting Software\Battery System\Python\Calibration
@@ -86,37 +79,42 @@ def main():
         
     # this section needs to be commented to run on thonny
     # check if usb is connected and run relay data if so
-    # if vbus_pin.value():
+    if vbus_pin.value():
         #display.power_off()
-        #status_led.value(1)  
-        # relay_data(vbus_pin, status_led)
-        #status_led.value(0)
-    #else:
-        #status_led.value(0)  
+        status_led.value(1)
+        display.power_off()
+        relay_data(vbus_pin, status_led)
+        status_led.value(0)
+    else:
+        status_led.value(0)  
+
+    # for if starting in logging position
+    while switch_pin.value() == 1:
+        display.power_off()
+        sleep_with_wakeup(16, switch_pin, vbus_pin, status_led)
 
     while True:
-        display.power_on()
         # SETUP
-        while switch_pin.value() == switch_start_state:
+        while switch_pin.value() == 0:
+            display.power_on()
             read_channels_setup(batteries, display, num_batteries)
             # if it gets plugged into usb it resets
             # when it resets it will begin relaying data
             # needs to be commented to run on thonny
-            # if vbus_pin.value():
-                # machine.reset()
+            if vbus_pin.value():
+                machine.reset()
 
             
         # LOGGING
-        while not switch_pin.value() == switch_start_state:
+        while switch_pin.value() == 1:
             display.power_off()
 
 
             # Read battery voltages and log data
-            logging = read_channels_log(batteries, num_batteries, logging)
-                
+            logging = read_channels_log(batteries, num_batteries, logging, rtc, timestart)
             # function for extended periods of sleeping
             # sleep_with_wakeup(10, switch_pin, switch_start_state, vbus_pin, status_led)
-            sleep_with_wakeup(15, switch_pin, switch_start_state, status_led) 
+            sleep_with_wakeup(5*60, switch_pin, vbus_pin, status_led)
 # Run the main function
 # not sure if this is actually needed
 if __name__ == "__main__":
